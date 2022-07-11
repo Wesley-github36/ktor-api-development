@@ -3,9 +3,9 @@ package za.co.olympus.persistence.dao
 import kotlinx.coroutines.runBlocking
 import org.jetbrains.exposed.sql.*
 import za.co.olympus.model.Employee
-import za.co.olympus.model.Token
 import za.co.olympus.persistence.config.DatabaseFactory.dbQuery
 import za.co.olympus.persistence.dto.EmployeeDTO
+import za.co.olympus.security.JwtConfig
 
 class DaoFacadeImpl : DaoFacade {
     private fun resultRowToEmployee(row: ResultRow) = Employee(
@@ -35,18 +35,18 @@ class DaoFacadeImpl : DaoFacade {
         return@dbQuery result is Employee
     }
 
-
     override suspend fun editEmployeeByInsertingPin(
-        employeeNumber: String ,
+        employeeNumber: String,
         pin: String
-    ): Token? = dbQuery {
+    ): String? = dbQuery {
 
         val result = EmployeeDTO.update({ EmployeeDTO.employeeNumber.eq(employeeNumber) }) {
             it[EmployeeDTO.pin] = pin
         } > 0
 
-        return@dbQuery null
+        if (!result) return@dbQuery null
 
+        return@dbQuery JwtConfig.instance.createToken(employeeNumber)
     }
     override suspend fun insertToken(): Boolean {
         TODO()
